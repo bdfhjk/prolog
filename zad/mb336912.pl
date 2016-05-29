@@ -82,7 +82,7 @@ get_nth_2(Id, NN, E, [_|T]) :-
 
 
 % ---------------------------------------------------------------------------
-% ----------------------------- [MAIN CODE] ---------------------------------
+% ----------------------------- [PRINTING UTILS] ----------------------------
 % ---------------------------------------------------------------------------
 
 write_processes_number([H]) :-
@@ -108,6 +108,11 @@ write_process_state() :-
   write("Procesy w sekcji: "),
   b_getval(unsafe_processes, X),
   write_processes_number(X).
+
+
+% ---------------------------------------------------------------------------
+% ----------------------------- [MAIN CODE] ---------------------------------
+% ---------------------------------------------------------------------------
 
 verify(N, File) :-
   N > 0,
@@ -154,9 +159,8 @@ wrong(_, Program, StanP, Wynik, Wynik) :-
   nb_setval(uncorrect_state, StanP).
 
 wrong(N, Program, StanP, Przeplot, Wynik) :-
-  %nextStep = step(Program, StanP, _, Stan2),
   step(Program, StanP, _, Stan2),
-  %write(StanP), write(' -> '), write(Stan2), nl,
+  %write(StanP), write(' -> '), write(Stan2), nl, --- TURN ON FOR DEBUGGING
   b_getval(visited, X),
   b_getval(stan_number, Y),
   not(memberchk(Stan2, X)),
@@ -169,20 +173,19 @@ wrong(N, Program, StanP, Przeplot, Wynik) :-
 wrong(N, Program, StanP, Przeplot) :-
   wrong(N, Program, StanP, [StanP], Przeplot).
 
-
 unsafe_state(Program, [C, _, _, _, _]) :-
   nb_setval(unsafe_processes, []),
   unsafe_state(Program, C, X, 0),
   X > 1.
 
-  unsafe_state(Program, [H|T], X, A) :-
-    B is A + 1,
-    unsafe_state(Program, T, Y, B),
-    (is_sekcja(Program, H) ->
-       b_getval(unsafe_processes, L),
-       nb_setval(unsafe_processes, [A|L]),
-       X is Y+1;
-     X=Y).
+unsafe_state(Program, [H|T], X, A) :-
+  B is A + 1,
+  unsafe_state(Program, T, Y, B),
+  (is_sekcja(Program, H) ->
+     b_getval(unsafe_processes, L),
+     nb_setval(unsafe_processes, [A|L]),
+     X is Y+1;
+   X=Y).
 
 unsafe_state(Program, [H], X, A) :-
   (is_sekcja(Program, H) ->
@@ -191,11 +194,9 @@ unsafe_state(Program, [H], X, A) :-
     X is 1;
     X is 0).
 
-  is_sekcja(Program, H) :-
-    Program = program(ProgramList),
-    nth0(H, ProgramList, sekcja).
-
-%evalL -Wyr, -Stan, -PrId
+is_sekcja(Program, H) :-
+  Program = program(ProgramList),
+  nth0(H, ProgramList, sekcja).
 
 % ---------------------------------------------------------------------------
 % --------------------- [LOGIC EXPRESSION EVALUATION] -----------------------
