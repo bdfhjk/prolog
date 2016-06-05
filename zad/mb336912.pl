@@ -10,7 +10,7 @@
 % Each elemet is an one-dimension list except A which is a two-dimension list.
 
 :- ensure_loaded(library(lists)).
-:- set_prolog_flag(double_quotes, chars).
+
 % ---------------------------------------------------------------------------
 % ------------------------------- [UTILS] -----------------------------------
 % ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ set_nth_2(Id, NN, E, [H|T], [H2|T2]) :-
   set_nth_2(Id2, NN, E, T, T2).
 
 % get_nth_2(Id-1dim, Id-2dim, Element, List)
-% get [Id-1dim, Id-2dim] th element from 2 dimensional list and save to Element.
+% get [Id-1dim, Id-2dim] th element from 2 dimensional list and save to Element
 get_nth_2(0, NN, E, [H|_]) :-
   nth0(NN, H, E).
 
@@ -86,7 +86,7 @@ get_nth_2(Id, NN, E, [_|T]) :-
 
 
 % write_processes(IdentificatorsList, InstructionList)
-% write processes state according to the task specification
+% write processes state according to the task specification.
 write_processes([],[]).
 
 write_processes([H|T], [H2|T2]) :-
@@ -117,10 +117,12 @@ write_in_section([H|T]) :-
 % ListaId - processes numbers in unsafe state.
 % ListaNum - processes status counters in unsafe state.
 % WSekcji - numbers of processes in critical section.
-% BFS-like traversing all of the possible states with an unstructured order.
+
+% BFS-like traversing all of possible states with an unspecified order.
 % This function is getting the first state from the queue,
-% checking if it's an unsafe state and calling the pojde function to add all
+% checking if it's an unsafe state, if not call the pojde function to add all
 % non visited neighbors to the queue.
+
 ide(N, Program, Numer, _, [Stan|_], Stan, Numer, ListaId, ListaNum, WSekcji) :-
   wrong(N, Program, Stan, Numer, ListaId, ListaNum, WSekcji).
 
@@ -131,8 +133,9 @@ ide(N, Program, Numer, Odwiedzone, Kolejka, StanW, NumerW,
    ListaId, ListaNum, WSekcji, ListaP).
 
 % pojde(N, Program, Numer, Odwiedzone,
-%     Kolejka, StanW, NumerW, ListaId, ListaNum, WSekcjil, ProcessesToProces)
+%     Kolejka, StanW, NumerW, ListaId, ListaNum, WSekcji, ProcessesToProcess)
 % ProcessesToProces - numbers of processes to be analyzed.
+% Other arguments are the same as in ide(...)
 % A helper function to ide. It's getting all unvisited neighbors
 % of a current state and putting them into the queue.
 pojde(N, Program, Numer, Odwiedzone, [Stan|T], StanW, NumerW,
@@ -157,7 +160,8 @@ verify(N, File) :-
   N > 0,
   set_prolog_flag(fileerrors, off),
   see(File),
-  !, % Cut -> we don't want to process alternatives if we can open the file.
+  !, % Cut -> we don't want to process alternative predicates
+     % if we can open the file.
   read(Vars),
   read(Arrays),
   read(Program),
@@ -165,14 +169,15 @@ verify(N, File) :-
   initState(Program, N, Vars, Arrays, StanP),
   (ide(N, Program, 1, [StanP], [StanP], _, NumerW, ListaId,
     ListaNum, WSekcji) ->
-    format('Program jest niepoprawny: stan nr ~d nie jest bezpieczny ~n', [NumerW]),
+    format('Program jest niepoprawny: stan nr ~d nie jest bezpieczny ~n',
+      [NumerW]),
     format('Niepoprawny przeplot: ~n', []),
     write_processes(ListaId, ListaNum),
     format('Procesy w sekcji: ', []),
     write_in_section(WSekcji),
-    !;
+    !;  % End of analysis.
     format('Program jest poprawny (bezpieczny).~n', []),
-    !).
+    !). % End of analysis.
 
 verify(N, File) :-
   N > 0,
