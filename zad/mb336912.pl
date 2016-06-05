@@ -17,6 +17,20 @@
 
 % fill(List, Element, Number_of_elements)
 % Create a list with n elements equal E.
+fill_increasing([], 0).
+
+fill_increasing([H|T], N) :-
+  N > 0,
+  N2 is N - 1,
+  H is N - 1,
+  fill_increasing(T, N2).
+
+generateNumbers(N, X) :-
+  fill_increasing(T, N),
+  member(X, T).
+
+% fill(List, Element, Number_of_elements)
+% Create a list with n elements equal E.
 fill([], _, 0).
 
 fill([H|T], X, N) :-
@@ -85,52 +99,69 @@ get_nth_2(Id, NN, E, [_|T]) :-
 % ----------------------------- [PRINTING UTILS] ----------------------------
 % ---------------------------------------------------------------------------
 
-write_processes_number([H]) :-
-  format("~d.~n", H).
+write_processes([],[]).
 
-write_processes_number([H|T]) :-
-  format("~d, ", H),
-  write_processes_number(T).
+write_processes([H|T], [H2|T2]) :-
+  format("    Proces ~d : ~d ~n", [H, H2]),
+  write_processes(T, T2).
 
-write_processes_number([]) :-
-  format("~n").
+write_in_section([H]) :-
+  format("~d.~n", [H]).
 
-write_processes([H|T], A) :-
-  format("    Proces ~d : ~d ~n", [A, H]),
-  B is A + 1,
-  write_processes(T, B).
-
-write_processes([], _).
-
-write_process_state() :-
-  b_getval(uncorrect_state, [C, _, _, _, _]),
-  write_processes(C, 0),
-  write("Procesy w sekcji: "),
-  b_getval(unsafe_processes, X),
-  write_processes_number(X).
-
+write_in_section([H|T]) :-
+  format("~d, ", [H]),
+  write_in_section(T).
 
 % ---------------------------------------------------------------------------
 % ----------------------------- [MAIN CODE] ---------------------------------
 % ---------------------------------------------------------------------------
 
+ide(N, Program, Numer, _, [Stan|_], Stan, Numer, ListaId, ListaNum, WSekcji) :-
+  wrong(N, Program, Stan, Numer, ListaId, ListaNum, WSekcji).
+
+ide(N, Program, Numer, Odwiedzone, Kolejka, StanW, NumerW,
+    ListaId, ListaNum, WSekcji) :-
+  fill_increasing(ListaP, N),
+  pojde(N, Program, Numer, Odwiedzone, Kolejka, StanW, NumerW,
+   ListaId, ListaNum, WSekcji, ListaP).
+
+pojde(N, Program, Numer, Odwiedzone, [Stan|T], StanW, NumerW,
+   ListaId, ListaNum, WSekcji,  [Id|T2]) :-
+  step(Program, Stan, Id, StanN),
+  !,
+  proper_length(Odwiedzone, L),
+  format("Dlugosc odwiedzonych: ~d ~n", [L]),
+  (member(StanN, Odwiedzone) ->
+    pojde(N, Program, Numer, Odwiedzone, [Stan|T], StanW, NumerW,
+      ListaId, ListaNum, WSekcji, T2);
+    pojde(N, Program, Numer, [StanN|Odwiedzone], [Stan,StanN|T],
+      StanW, NumerW, ListaId, ListaNum, WSekcji, T2)),
+    format("Numer: ~d ~n", [Numer]).
+
+pojde(N, Program, Numer, Odwiedzone, [_|T], StanW, NumerW,
+ ListaId, ListaNum, WSekcji, []) :-
+   Numer2 is Numer + 1,
+   ide(N, Program, Numer2, Odwiedzone, T, StanW, NumerW, ListaId,
+    ListaNum, WSekcji).
+
 verify(N, File) :-
   N > 0,
   set_prolog_flag(fileerrors, off),
   see(File),
-  !,                    % czerwone odcięcie (tu dozwolone)
+  !,
   read(Vars),
   read(Arrays),
   read(Program),
   seen,
   initState(Program, N, Vars, Arrays, StanP),
-  (not(wrong(N, Program, StanP, _)) ->
-      format("Program jest poprawny (bezpieczny)");
-      b_getval(stan_number, L),
-      format(
-"Program jest niepoprawny: stan nr ~d nie jest bezpieczny. ~n
-Niepoprawny przeplot: ~n", [L]),
-      write_process_state()).
+  (ide(N, Program, 1, [StanP], [StanP], StanW, NumerW, ListaId,
+    ListaNum, WSekcji) ->
+    format("Program jest niepoprawny: stan nr ~d nie jest bezpieczny.
+Nieporawny przeplot: ~n", [NumerW]),
+    write_processes(ListaId, ListaNum),
+    format("Procesy w sekcji: "),
+    write_in_section(WSekcji);
+    format("Program jest poprawny (bezpieczny).~n")).
 
 verify(N, File) :-
   N > 0,
@@ -154,45 +185,26 @@ initState(_, N, Vars, Arrays, StanP) :-
   nb_setval(stan_number, 0),
   StanP = [C, VT, V, AT, A].
 
-wrong(_, Program, StanP, Wynik, Wynik) :-
-  unsafe_state(Program, StanP),
-  nb_setval(uncorrect_state, StanP).
 
-wrong(N, Program, StanP, Przeplot, Wynik) :-
-  step(Program, StanP, _, Stan2),
-  %write(StanP), write(' -> '), write(Stan2), nl, --- TURN ON FOR DEBUGGING
-  b_getval(visited, X),
-  b_getval(stan_number, Y),
-  not(memberchk(Stan2, X)),
-  X2 = [Stan2|X],
-  Y2 is Y + 1,
-  nb_setval(stan_number, Y2),
-  nb_setval(visited, X2),
-  wrong(N, Program, Stan2, [Stan2|Przeplot], Wynik).
+wrong(N, Program, Stan, _, ListaId, ListaNum, WSekcji) :-
+  fill_increasing(ListaP, N),
+  wrong(N, Program, Stan, Num, ListaId, ListaNum, WSekcji, ListaP),
+  Num > 1.
 
-wrong(N, Program, StanP, Przeplot) :-
-  wrong(N, Program, StanP, [StanP], Przeplot).
+wrong(_, _, _, 0, [], [], [], []).
 
-unsafe_state(Program, [C, _, _, _, _]) :-
-  nb_setval(unsafe_processes, []),
-  unsafe_state(Program, C, X, 0),
-  X > 1.
-
-unsafe_state(Program, [H|T], X, A) :-
-  B is A + 1,
-  unsafe_state(Program, T, Y, B),
-  (is_sekcja(Program, H) ->
-     b_getval(unsafe_processes, L),
-     nb_setval(unsafe_processes, [A|L]),
-     X is Y+1;
-   X=Y).
-
-unsafe_state(Program, [H], X, A) :-
-  (is_sekcja(Program, H) ->
-    b_getval(unsafe_processes, L),
-    nb_setval(unsafe_processes, [A|L]),
-    X is 1;
-    X is 0).
+wrong(N, Program, [C, VT, V, AT, A], Num2, ListaId, ListaNum, WSekcji,
+  [H|T]) :-
+  nth0(H, C, InsNum),
+  ListaId  = [H|ListaIdR],
+  ListaNum = [InsNum|ListaNumR],
+  (is_sekcja(Program, InsNum) ->
+    wrong(N, Program, [C, VT, V, AT, A], Num, ListaIdR, ListaNumR,
+      WSekcjiR, T),
+    Num2 is Num + 1,
+    WSekcji = [H|WSekcjiR];
+    wrong(N, Program, [C, VT, V, AT, A], Num2, ListaIdR,
+      ListaNumR, WSekcji, T)).
 
 is_sekcja(Program, H) :-
   Program = program(ProgramList),
