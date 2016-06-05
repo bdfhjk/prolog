@@ -10,7 +10,7 @@
 % Each elemet is an one-dimension list except A which is a two-dimension list.
 
 :- ensure_loaded(library(lists)).
-
+:- set_prolog_flag(double_quotes, chars).
 % ---------------------------------------------------------------------------
 % ------------------------------- [UTILS] -----------------------------------
 % ---------------------------------------------------------------------------
@@ -90,16 +90,16 @@ get_nth_2(Id, NN, E, [_|T]) :-
 write_processes([],[]).
 
 write_processes([H|T], [H2|T2]) :-
-  format("    Proces ~d : ~d ~n", [H, H2]),
+  format('    Proces ~d : ~d ~n', [H, H2]),
   write_processes(T, T2).
 
 % write_in_section(ProcessesList)
 % write processes in section numbers according to the task specification.
 write_in_section([H]) :-
-  format("~d.~n", [H]).
+  format('~d.~n', [H]).
 
 write_in_section([H|T]) :-
-  format("~d, ", [H]),
+  format('~d, ', [H]),
   write_in_section(T).
 
 % ---------------------------------------------------------------------------
@@ -165,21 +165,21 @@ verify(N, File) :-
   initState(Program, N, Vars, Arrays, StanP),
   (ide(N, Program, 1, [StanP], [StanP], _, NumerW, ListaId,
     ListaNum, WSekcji) ->
-    format("Program jest niepoprawny: stan nr ~d nie jest bezpieczny.
-Nieporawny przeplot: ~n", [NumerW]),
+    format('Program jest niepoprawny: stan nr ~d nie jest bezpieczny ~n', [NumerW]),
+    format('Niepoprawny przeplot: ~n', []),
     write_processes(ListaId, ListaNum),
-    format("Procesy w sekcji: "),
+    format('Procesy w sekcji: ', []),
     write_in_section(WSekcji),
     !;
-    format("Program jest poprawny (bezpieczny).~n")),
-    !.
+    format('Program jest poprawny (bezpieczny).~n', []),
+    !).
 
 verify(N, File) :-
   N > 0,
   format('Error: niepoprawna nazwa pliku - ~p.~n', [File]).
 
 verify(_, _) :-
-  format("Error: parametr 0 powinien byc liczba > 0").
+  format('Error: parametr 0 powinien byc liczba > 0', []).
 
 % Initial state creation
 % initState(Program, N, Vars, Arrays, StanP)
@@ -254,7 +254,7 @@ evalL(=(A,B), S, PrId) :-
 evalL(<>(A, B), S, PrId) :-
   eval(A, S, PrId, EA),
   eval(B, S, PrId, EB),
-  not(EA =:= EB).
+  EA =\= EB.
 
 % ---------------------------------------------------------------------------
 % --------------------- [ARITHMETIC EXPRESSION EVALUATION] ------------------
@@ -292,7 +292,7 @@ eval(arr(IDN, X), [C, VT, V, AT, A], PrId, N) :-
 
 eval(VAR, [_, VT, V, _, _], _, N) :-
   VT = vars(VTL),
-  not(integer(VAR)),
+  \+(integer(VAR)),
   nth0(NVAR, VTL, VAR),
   nth0(NVAR, V, N).
 
